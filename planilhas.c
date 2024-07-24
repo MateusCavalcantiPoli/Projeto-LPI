@@ -10,9 +10,11 @@ typedef struct {
 
 // Função para abrir e processar o arquivo CSV
 void abrirCsv(const char *nomeArquivo, AppData *app_data) {
-    FILE *file = fopen(nomeArquivo, "r");
+    gtk_text_buffer_set_text(app_data->buffer, "", -1);
+
+	FILE *file = fopen(nomeArquivo, "r");
     if (!file) {
-        GtkTextIter end;
+		GtkTextIter end;
         gtk_text_buffer_get_end_iter(app_data->buffer, &end);
         gtk_text_buffer_insert(app_data->buffer, &end, "Não foi possível abrir o arquivo CSV: ", -1);
         gtk_text_buffer_insert(app_data->buffer, &end, nomeArquivo, -1);
@@ -65,7 +67,7 @@ int main(int argc, char *argv[]) {
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_add(GTK_CONTAINER(window), vbox);
 
-    
+
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
 
@@ -81,7 +83,7 @@ int main(int argc, char *argv[]) {
     AppData app_data = { buffer };
 
     // Definir os arquivos CSV
-    const char *file1 = "1.csv"; 
+    const char *file1 = "1.csv";
     const char *file2 = "2.csv";
     const char *file3 = "3.csv";
 
@@ -104,3 +106,4 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
