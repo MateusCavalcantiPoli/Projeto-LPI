@@ -29,7 +29,7 @@ void abrirCsv(const char *nomeArquivo, AppData *app_data) {
     gtk_text_buffer_insert(app_data->buffer, &end, "\n", -1);
 
     char line[1024];
-    int row = 1;
+    int ln = 1;
     while (fgets(line, sizeof(line), file)) {
         char *token;
         int col = 1;
@@ -37,14 +37,14 @@ void abrirCsv(const char *nomeArquivo, AppData *app_data) {
         while (token) {
             if (strcmp(token, "") == 0 || strcmp(token, "\n") == 0 || strcmp(token, "\r\n") == 0) {
                 char mensagem[128];
-                snprintf(mensagem, sizeof(mensagem), "Célula vazia encontrada em R%dC%d\n", row, col);
+                snprintf(mensagem, sizeof(mensagem), "Célula vazia encontrada em L%dC%d\n", ln, col);
                 gtk_text_buffer_get_end_iter(app_data->buffer, &end);
                 gtk_text_buffer_insert(app_data->buffer, &end, mensagem, -1);
             }
             token = strtok(NULL, ",");
             col++;
         }
-        row++;
+        ln++;
     }
 
     fclose(file);
@@ -106,4 +106,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
