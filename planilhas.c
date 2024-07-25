@@ -2,19 +2,49 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 // Estrutura para armazenar o TextView
 typedef struct {
     GtkTextBuffer *buffer;
 } AppData;
 
+// Função para verificar se a string contém apenas dígitos
+int somente_digitos(const char *str) {
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (!isdigit(str[i])) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+// Função para validar o CEP
+int validar_cep(const char *cep) {
+    int len = strlen(cep);
+    if (len == 8 && somente_digitos(cep)) {
+        return 1;
+    }
+    if (len == 9) {
+        if (cep[5] == '-' || cep[5] == ' ') {
+            char parte1[6], parte2[4];
+            strncpy(parte1, cep, 5);
+            parte1[5] = '\0';
+            strncpy(parte2, cep + 6, 3);
+            parte2[3] = '\0';
+            return somente_digitos(parte1) && somente_digitos(parte2);
+        }
+    }
+    return 0;
+}
+
 // Função para abrir e processar o arquivo CSV
 void abrirCsv(const char *nomeArquivo, AppData *app_data) {
     gtk_text_buffer_set_text(app_data->buffer, "", -1);
 
-	FILE *file = fopen(nomeArquivo, "r");
+    FILE *file = fopen(nomeArquivo, "r");
     if (!file) {
-		GtkTextIter end;
+        GtkTextIter end;
         gtk_text_buffer_get_end_iter(app_data->buffer, &end);
         gtk_text_buffer_insert(app_data->buffer, &end, "Não foi possível abrir o arquivo CSV: ", -1);
         gtk_text_buffer_insert(app_data->buffer, &end, nomeArquivo, -1);
@@ -30,17 +60,53 @@ void abrirCsv(const char *nomeArquivo, AppData *app_data) {
 
     char line[1024];
     int ln = 1;
+    int cep_columns[100];
+    int cep_column_count = 0;
+
+    if (fgets(line, sizeof(line), file)) {
+        char *token;
+        int col = 1;
+        token = strtok(line, ";");
+        while (token) {
+            if (strstr(token, "CEP") != NULL) {
+                cep_columns[cep_column_count++] = col;
+            }
+            token = strtok(NULL, ";");
+            col++;
+        }
+        ln++;
+    }
+
     while (fgets(line, sizeof(line), file)) {
         char *token;
         int col = 1;
         token = strtok(line, ";");
         while (token) {
-            if (strcmp(token, "") == 0 || strcmp(token, "\n") == 0 || strcmp(token, "\r\n") == 0) {
+            // Verificar se o token é nulo ou vazio
+            if (token == NULL) {
+                char mensagem[128];
+                snprintf(mensagem, sizeof(mensagem), "Valor nulo encontrado em L%dC%d\n", ln, col);
+                gtk_text_buffer_get_end_iter(app_data->buffer, &end);
+                gtk_text_buffer_insert(app_data->buffer, &end, mensagem, -1);
+            } else if (strcmp(token, "") == 0 || strcmp(token, "\n") == 0 || strcmp(token, "\r\n") == 0) {
                 char mensagem[128];
                 snprintf(mensagem, sizeof(mensagem), "Célula vazia encontrada em L%dC%d\n", ln, col);
                 gtk_text_buffer_get_end_iter(app_data->buffer, &end);
                 gtk_text_buffer_insert(app_data->buffer, &end, mensagem, -1);
             }
+
+            // Verificar e validar colunas CEP
+            for (int i = 0; i < cep_column_count; i++) {
+                if (col == cep_columns[i]) {
+                    if (!validar_cep(token)) {
+                        char mensagem[128];
+                        snprintf(mensagem, sizeof(mensagem), "CEP inválido encontrado em L%dC%d\n", ln, col);
+                        gtk_text_buffer_get_end_iter(app_data->buffer, &end);
+                        gtk_text_buffer_insert(app_data->buffer, &end, mensagem, -1);
+                    }
+                }
+            }
+
             token = strtok(NULL, ";");
             col++;
         }
@@ -66,7 +132,6 @@ int main(int argc, char *argv[]) {
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_add(GTK_CONTAINER(window), vbox);
-
 
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
