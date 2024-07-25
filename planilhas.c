@@ -33,7 +33,7 @@ void abrirCsv(const char *nomeArquivo, AppData *app_data) {
     while (fgets(line, sizeof(line), file)) {
         char *token;
         int col = 1;
-        token = strtok(line, ",");
+        token = strtok(line, ";");
         while (token) {
             if (strcmp(token, "") == 0 || strcmp(token, "\n") == 0 || strcmp(token, "\r\n") == 0) {
                 char mensagem[128];
@@ -41,7 +41,7 @@ void abrirCsv(const char *nomeArquivo, AppData *app_data) {
                 gtk_text_buffer_get_end_iter(app_data->buffer, &end);
                 gtk_text_buffer_insert(app_data->buffer, &end, mensagem, -1);
             }
-            token = strtok(NULL, ",");
+            token = strtok(NULL, ";");
             col++;
         }
         ln++;
